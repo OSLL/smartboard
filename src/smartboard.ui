@@ -176,11 +176,6 @@
       </property>
      </widget>
     </widget>
-    <zorder>m_backOptions</zorder>
-    <zorder>m_optionsLbl</zorder>
-    <zorder>m_sibConnectGrp</zorder>
-    <zorder>groupBox</zorder>
-    <zorder>m_publishFrame</zorder>
    </widget>
    <widget class="QFrame" name="m_publishFrame">
     <property name="geometry">
@@ -329,6 +324,16 @@
      </property>
     </widget>
    </widget>
+   <widget class="QGraphicsView" name="m_graphicsView">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>-1</y>
+      <width>401</width>
+      <height>441</height>
+     </rect>
+    </property>
+   </widget>
    <widget class="QTreeWidget" name="m_triplesView">
     <property name="enabled">
      <bool>true</bool>
@@ -336,7 +341,7 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>-1</y>
+      <y>0</y>
       <width>401</width>
       <height>441</height>
      </rect>
@@ -357,7 +362,7 @@
      <bool>true</bool>
     </property>
     <property name="columnCount">
-     <number>3</number>
+     <number>4</number>
     </property>
     <attribute name="headerVisible">
      <bool>true</bool>
@@ -366,7 +371,7 @@
      <bool>false</bool>
     </attribute>
     <attribute name="headerDefaultSectionSize">
-     <number>100</number>
+     <number>50</number>
     </attribute>
     <attribute name="headerHighlightSections">
      <bool>false</bool>
@@ -387,6 +392,11 @@
     <column>
      <property name="text">
       <string notr="true">3</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string notr="true">4</string>
      </property>
     </column>
    </widget>
@@ -489,6 +499,20 @@
   <action name="unsubscribeAction">
    <property name="text">
     <string>Unsibscribe board</string>
+   </property>
+  </action>
+  <action name="viewAction">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>View Board</string>
+   </property>
+   <property name="toolTip">
+    <string>View Board</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V</string>
    </property>
   </action>
  </widget>

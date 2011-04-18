@@ -5,7 +5,7 @@
 #-------------------------------------------------
 
 TEMPLATE = app
-QT       += core gui network xml
+QT       += core gui network xml svg
 
 CONFIG       += qt link_pkgconfig
 #CONFIG       -= app_bundle
@@ -22,11 +22,15 @@ LIBS         += -L/usr/local/lib \
 SOURCES += main.cpp \
            smartboard.cpp \
            kphandlers.cpp \
-    finddialog.cpp
+    finddialog.cpp \
+    viewboard.cpp \
+    sticker.cpp
 
 HEADERS  += smartboard.h \
             kphandlers.h \
-    finddialog.h
+    finddialog.h \
+    viewboard.h \
+    sticker.h
 
 FORMS    += smartboard.ui
 

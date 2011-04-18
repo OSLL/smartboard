@@ -9,5 +9,7 @@
         <file>images/exit.png</file>
         <file>images/options.png</file>
         <file>images/search.png</file>
+        <file>images/view.png</file>
+        <file>images/sticker.svg</file>
     </qresource>
 </RCC>

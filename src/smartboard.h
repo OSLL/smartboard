@@ -14,6 +14,8 @@
 #include "triple.h"
 
 #include "finddialog.h"
+#include "viewboard.h"
+#include "sticker.h"
 
 
 class TemplateQuery;
@@ -46,6 +48,10 @@ private:
 
     FindDialog *m_findDialog;
 
+    ViewBoard *m_viewBoard;
+    Sticker *m_sticker;
+
+
 public slots:
     void joinComplete(int success);
     void sibList(const QList<QSibInfo *> &siblist);
@@ -69,6 +75,7 @@ private slots:
     void publishAnnouncements();
     void searchAnnouncements();
     void subscribeBoard();
+    void showViewBoard();
     void boardHelp();
     void boardAbout();
 

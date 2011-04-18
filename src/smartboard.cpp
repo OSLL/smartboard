@@ -3,6 +3,9 @@
 #include <QApplication>
 #include <QtGui>
 #include <QModelIndex>
+#include <QGraphicsItem>
+#include <QGraphicsSvgItem>
+#include <QSvgRenderer>
 
 #include "smartboard.h"
 #include "ui_smartboard.h"
@@ -15,12 +18,12 @@
 #include "templatesubscription.h"
 
 #include "finddialog.h"
-
+#include "viewboard.h"
 
 SmartBoard::SmartBoard(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::SmartBoard),
     m_directory("/home"), m_fileDialog(this),
-    m_findDialog(0)
+    m_findDialog(0), m_sticker(new Sticker(":/images/sticker.svg"))
 {
     ui->setupUi(this);
 
@@ -35,15 +38,29 @@ SmartBoard::SmartBoard(QWidget *parent) :
     ui->publishAction->setEnabled(false);
     ui->searchAction->setEnabled(false);
     ui->unsubscribeAction->setEnabled(false);
+    ui->viewAction->setEnabled(false);
 
     ui->m_triplesView->setColumnWidth(0,80);
     ui->m_triplesView->setColumnWidth(1,100);
-    ui->m_triplesView->setColumnWidth(2,212);
+    ui->m_triplesView->setColumnWidth(2,202);
+    ui->m_triplesView->setColumnWidth(3,10);
     QStringList headers;
-    headers << tr("Author") << tr("Theme") << tr("Message");
+    headers << tr("Author") << tr("Theme") << tr("Message") << tr("V") ;
     ui->m_triplesView->setHeaderLabels(headers);
-
     ui->m_sibStatus->setStyleSheet("QLabel { color : red; }");
+
+    m_viewBoard = new ViewBoard;
+    //ui->m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    //ui->m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    ui->m_graphicsView->setRenderHint(QPainter::Antialiasing, true);
+    ui->m_graphicsView->setCacheMode(QGraphicsView::CacheBackground);
+    ui->m_graphicsView->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    ui->m_graphicsView->setOptimizationFlags(QGraphicsView::DontClipPainter |
+                                             QGraphicsView::DontSavePainterState |
+                                             QGraphicsView::DontAdjustForAntialiasing);
+    ui->m_graphicsView->setMaximumSize(401, 441);
+    ui->m_graphicsView->setScene(m_viewBoard);
+    ui->m_graphicsView->hide();
 
     setWindowIcon(QIcon(":/images/icon.png"));
 }
@@ -93,6 +110,11 @@ void SmartBoard::createActions()
     ui->unsubscribeAction->setShortcut(tr("Ctrl+U"));
     ui->unsubscribeAction->setStatusTip(tr("Unsibscribe from SmartBoard"));
 
+    ui->viewAction->setIcon(QIcon(":/images/view.png"));
+    ui->viewAction->setShortcut(tr("Ctrl+V"));
+    ui->viewAction->setStatusTip(tr("SmartBoard view"));
+    connect(ui->viewAction, SIGNAL(triggered()), this, SLOT(showViewBoard()));
+
     ui->helpAction->setIcon(QIcon(":/images/help.png"));
     ui->helpAction->setShortcut(tr("Ctrl+H"));
     ui->helpAction->setStatusTip(tr("SmartBoard help"));
@@ -110,6 +132,9 @@ void SmartBoard::createToolBars()
     ui->mainToolBar->addAction(ui->publishAction);
     ui->mainToolBar->addAction(ui->subscribeBoardAction);
     ui->mainToolBar->addAction(ui->unsubscribeAction);
+    ui->mainToolBar->addSeparator();
+
+    ui->mainToolBar->addAction(ui->viewAction);
     ui->mainToolBar->addAction(ui->searchAction);
     ui->mainToolBar->addSeparator();
 
@@ -127,8 +152,10 @@ void SmartBoard::createToolBars()
 void SmartBoard::boardOptions()
 {
     if (ui->m_publishFrame->isVisible()) ui->m_publishFrame->hide();
+    if (ui->m_graphicsView->isVisible()) ui->m_graphicsView->hide();
+    if (ui->m_triplesView->isVisible()) ui->m_triplesView->hide();
 
-    ui->m_triplesView->hide();
+    //ui->m_triplesView->hide();
     ui->m_optionsFrame->show();
 }
 
@@ -139,10 +166,21 @@ void SmartBoard::on_m_backOptions_clicked()
     ui->m_triplesView->show();
 }
 
+//
+void SmartBoard::showViewBoard()
+{
+    if (ui->m_optionsFrame->isVisible()) ui->m_optionsFrame->hide();
+    if (ui->m_publishFrame->isVisible()) ui->m_publishFrame->hide();
+    if (ui->m_triplesView->isVisible()) ui->m_triplesView->hide();
+
+    ui->m_graphicsView->show();
+}
+
 // show add bulletin dialog
 void SmartBoard::publishAnnouncements()
 {
     if (ui->m_optionsFrame->isVisible()) ui->m_optionsFrame->hide();
+    if (ui->m_graphicsView->isVisible()) ui->m_graphicsView->hide();
 
     ui->m_authorTxt->clear();
     ui->m_themeTxt->clear();
@@ -176,6 +214,7 @@ void SmartBoard::subscribeBoard()
 {
     if (ui->m_optionsFrame->isVisible()) ui->m_optionsFrame->hide();
     if (ui->m_publishFrame->isVisible()) ui->m_publishFrame->hide();
+    if (ui->m_graphicsView->isVisible()) ui->m_publishFrame->hide();
     if (ui->m_triplesView->isHidden()) ui->m_triplesView->show();
 
     sibSubscribe(new Triple(TripleElement("sib:any", TripleElement::ElementTypeURI),
@@ -183,6 +222,7 @@ void SmartBoard::subscribeBoard()
                             TripleElement("sib:any", TripleElement::ElementTypeURI)));
 
     ui->searchAction->setEnabled(true);
+    ui->viewAction->setEnabled(true);
 }
 
 // smart board help
@@ -403,6 +443,12 @@ void SmartBoard::on_m_publishBtn_clicked()
         Triple *triple = m_graphList.takeFirst();
         delete triple;
     }
+
+    // set added announcement item to scene
+    m_sticker->translate(20, 20);
+    m_sticker->setToolTip(ui->m_themeTxt->text());
+    m_sticker->setData(0, ui->m_themeTxt->text());  // потом искать по данному полю
+    m_viewBoard->addItem(m_sticker);
 }
 
 void SmartBoard::sibSubscribe(Triple *triple)
@@ -476,6 +522,7 @@ void SmartBoard::subscriptionIndication()
         }
         if(resultsAdded.count())
         {
+            int k = 0;
             QList<QTreeWidgetItem *> items;
             for(it = resultsAdded.begin(); it != resultsAdded.end(); ++it)
             {
@@ -491,8 +538,16 @@ void SmartBoard::subscriptionIndication()
 
                     QTreeWidgetItem *item = new QTreeWidgetItem(strings);
                     items.append(item);
+
+                    // paint all existing bulletin boxes
+
+                    Sticker *sticker = new Sticker(":/images/sticker.svg");
+                    sticker->setToolTip((*it)->predicate().node());
+                    sticker->translate(15 *  k++, 15 * k++);
+                    m_viewBoard->addItem(sticker);
                 }
             }
+
             ui->m_triplesView->addTopLevelItems(items);
 
             ui->unsubscribeAction->setEnabled(true);
@@ -532,6 +587,10 @@ void SmartBoard::sibUnsubscribe()
         ui->subscribeBoardAction->setEnabled(true);
         ui->unsubscribeAction->setEnabled(false);
         ui->searchAction->setEnabled(false);
+        ui->viewAction->setEnabled(false);
+
+        // удалить все элементы сцены
+        m_viewBoard->clear();
     }
 }
 
