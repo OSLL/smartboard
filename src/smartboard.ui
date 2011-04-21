@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>SmartBoard</string>
+   <string>Smart Board</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <widget class="QFrame" name="m_optionsFrame">
@@ -137,7 +137,7 @@
       </rect>
      </property>
      <property name="title">
-      <string>Available SIB's</string>
+      <string>SIB's</string>
      </property>
      <widget class="QListWidget" name="m_sibList">
       <property name="geometry">

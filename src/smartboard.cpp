@@ -39,19 +39,20 @@ SmartBoard::SmartBoard(QWidget *parent) :
     ui->searchAction->setEnabled(false);
     ui->unsubscribeAction->setEnabled(false);
     ui->viewAction->setEnabled(false);
+    ui->m_sibConnectGrp->hide();
 
-    ui->m_triplesView->setColumnWidth(0,80);
-    ui->m_triplesView->setColumnWidth(1,100);
-    ui->m_triplesView->setColumnWidth(2,202);
+    ui->m_triplesView->setColumnWidth(0,70);
+    ui->m_triplesView->setColumnWidth(1,90);
+    ui->m_triplesView->setColumnWidth(2,185);
     ui->m_triplesView->setColumnWidth(3,10);
     QStringList headers;
-    headers << tr("Author") << tr("Theme") << tr("Message") << tr("V") ;
+    headers << tr("Author") << tr("Theme") << tr("Message") << tr("View") ;
     ui->m_triplesView->setHeaderLabels(headers);
     ui->m_sibStatus->setStyleSheet("QLabel { color : red; }");
 
     m_viewBoard = new ViewBoard;
-    //ui->m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    //ui->m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    //ui->m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    //ui->m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
     ui->m_graphicsView->setRenderHint(QPainter::Antialiasing, true);
     ui->m_graphicsView->setCacheMode(QGraphicsView::CacheBackground);
     ui->m_graphicsView->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
@@ -155,8 +156,12 @@ void SmartBoard::boardOptions()
     if (ui->m_graphicsView->isVisible()) ui->m_graphicsView->hide();
     if (ui->m_triplesView->isVisible()) ui->m_triplesView->hide();
 
-    //ui->m_triplesView->hide();
-    ui->m_optionsFrame->show();
+    if (ui->m_optionsFrame->isVisible())
+    {
+        ui->m_optionsFrame->hide();
+        ui->m_triplesView->show();
+    }
+    else ui->m_optionsFrame->show();
 }
 
 // hide options frame
@@ -173,7 +178,33 @@ void SmartBoard::showViewBoard()
     if (ui->m_publishFrame->isVisible()) ui->m_publishFrame->hide();
     if (ui->m_triplesView->isVisible()) ui->m_triplesView->hide();
 
-    ui->m_graphicsView->show();
+    if (ui->m_graphicsView->isVisible())
+    {
+        ui->m_graphicsView->hide();
+        ui->m_triplesView->show();
+        m_viewBoard->clear();
+    }
+    else
+    {
+        m_viewBoard->clear();
+        ui->m_graphicsView->show();
+    }
+
+    // paint all existing bulletin boxes
+    for (int i = 0; i < ui->m_triplesView->topLevelItemCount(); i++)
+    {
+        QTreeWidgetItem *item =  ui->m_triplesView->topLevelItem(i);
+        int rand = qrand() % 350;
+
+        if(item->checkState(3) == Qt::Checked)
+        {
+            Sticker *sticker = new Sticker(":/images/sticker.svg");
+            sticker->setStickerTheme(sticker, item->text(1));
+            sticker->setToolTip("<b>" + item->text(0) + "</b>" + "<p>" + item->text(2) + "</p>");
+            sticker->translate(rand, rand);
+            m_viewBoard->addItem(sticker);
+        }
+    }
 }
 
 // show add bulletin dialog
@@ -185,10 +216,20 @@ void SmartBoard::publishAnnouncements()
     ui->m_authorTxt->clear();
     ui->m_themeTxt->clear();
     ui->m_bulletinTxt->clear();
+    ui->m_publishStatusLbl->clear();
 
     ui->m_publishLbl->setText(tr("Publish announsment"));
     ui->m_triplesView->hide();
-    ui->m_publishFrame->show();
+
+    if (ui->m_publishFrame->isVisible())
+    {
+        ui->m_publishFrame->hide();
+        ui->m_triplesView->show();
+    }
+    else
+    {
+        ui->m_publishFrame->show();
+    }
 
     if (ui->m_publishBtn->isHidden())       ui->m_publishBtn->show();
     if (ui->m_publishStatusLbl->isHidden()) ui->m_publishStatusLbl->show();
@@ -229,12 +270,13 @@ void SmartBoard::subscribeBoard()
 void SmartBoard::boardHelp()
 {
     QMessageBox::about(this, tr("Smart Board help"),
-                       tr("<h2>Smart Board 0.2</h2>"
+                       tr("<h2>Smart Board</h2>"
                        "<p><b>Follow this instructions:</b> "
                        "<p><b>Options</b> - connect to the SIB, point SIB IP"
                        "<p><b>Publish</b> - publish new announsment."
                        "<p><b>Subscribe</b> - subscribe to announsments."
                        "<p><b>Unsubscribe</b> - unsubscribe from announsments."
+                       "<p><b>View</b> - graphical view of selected announsments."
                        "<p><b>Search</b> - search information in announsments."
                        "<p><b>Double click</b> on table item - get full information."));
 }
@@ -243,7 +285,7 @@ void SmartBoard::boardHelp()
 void SmartBoard::boardAbout()
 {
     QMessageBox::about(this, tr("About Smart Board"),
-                       tr("<h2>Smart Board 0.2</h2>"
+                       tr("<h2>Smart Board</h2>"
                        "<p>Smart Board is a client application that "
                        "work with announsment board. Smart Board is part "
                        "of a common smart space where users can share "
@@ -446,8 +488,8 @@ void SmartBoard::on_m_publishBtn_clicked()
 
     // set added announcement item to scene
     m_sticker->translate(20, 20);
-    m_sticker->setToolTip(ui->m_themeTxt->text());
-    m_sticker->setData(0, ui->m_themeTxt->text());  // потом искать по данному полю
+    m_sticker->setStickerTheme(m_sticker, ui->m_themeTxt->text());
+    m_sticker->setToolTip("<b>" + ui->m_authorTxt->text() + "</b>" + "<p>" + ui->m_bulletinTxt->toPlainText() + "</p>");
     m_viewBoard->addItem(m_sticker);
 }
 
@@ -522,7 +564,6 @@ void SmartBoard::subscriptionIndication()
         }
         if(resultsAdded.count())
         {
-            int k = 0;
             QList<QTreeWidgetItem *> items;
             for(it = resultsAdded.begin(); it != resultsAdded.end(); ++it)
             {
@@ -537,14 +578,8 @@ void SmartBoard::subscriptionIndication()
                         strings << "<empty>";
 
                     QTreeWidgetItem *item = new QTreeWidgetItem(strings);
+                    item->setCheckState(3, Qt::Unchecked);
                     items.append(item);
-
-                    // paint all existing bulletin boxes
-
-                    Sticker *sticker = new Sticker(":/images/sticker.svg");
-                    sticker->setToolTip((*it)->predicate().node());
-                    sticker->translate(15 *  k++, 15 * k++);
-                    m_viewBoard->addItem(sticker);
                 }
             }
 
@@ -625,6 +660,7 @@ QString SmartBoard::getSelectedItemUri()
     return sib_uri;
 }
 
+// убрать или переработать!
 void SmartBoard::on_m_searchBtn_clicked()
 {
     QString sibIpFileName = m_fileDialog.getOpenFileName(this, tr("Open and change SIB IP file"),

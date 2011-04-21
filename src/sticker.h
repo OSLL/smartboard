@@ -17,8 +17,11 @@ public:
 
     QSvgRenderer *m_renderer;
 
-private:
-    void setNewItemImage(QGraphicsSvgItem *item, QString image);
+    void setNewItemImage(QGraphicsSvgItem *item, const QString &image);
+    void setStickerTheme(QGraphicsSvgItem *item, const QString &theme);
+
+private slots:
+    void stickerFullInfo();
 };
 
 #endif // STICKER_H
