@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 
     dis->getSibs();
 
-    sb->setMaximumSize(400, 500);
+    //sb->setMaximumSize(400, 600);
     sb->show();
 
     return app.exec();

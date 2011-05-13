@@ -8,6 +8,9 @@
 #include <QTreeWidgetItem>
 #include <QDir>
 #include <QFileDialog>
+#include <QListWidget>
+#include <QTextEdit>
+#include <QGridLayout>
 
 #include "q_whiteboard_node.h"
 #include "q_sib_info.h"
@@ -43,14 +46,34 @@ private:
     QHash<QString, TemplateSubscription *> m_subscriptions;
     QString m_activeSubscription;
 
-    QDir m_directory;
-    QFileDialog m_fileDialog;
-
-    FindDialog *m_findDialog;
-
     ViewBoard *m_viewBoard;
     Sticker *m_sticker;
+    FindDialog *m_findDialog;
 
+    QFont m_font;
+
+    // graphics view
+    QGraphicsView *m_graphicsView;
+
+    // triples list
+    QTreeWidget *m_triplesView;
+
+    // options frame
+    QFrame *m_optionsFrame;
+    QListWidget *m_sibList;
+    QLabel *m_optionsLbl, *m_sibLbl, *m_sibStatus, *m_sibStatusLbl;
+    QPushButton *m_backOptions;
+
+    // publish frame
+    QFrame *m_publishFrame;
+    QLabel *m_publishLbl, *m_authorLbl, *m_bulletinLbl, *m_themeLbl, *m_publishStatusLbl;
+    QLineEdit *m_authorTxt, *m_themeTxt;
+    QTextEdit *m_bulletinTxt;
+    QPushButton *m_publishBtn, *m_backPublish;
+
+    QGridLayout *m_gridLayout;
+    QVBoxLayout *m_publishVboxLayout, *m_optionsVboxLayout;
+    QHBoxLayout *m_publishHboxLayout, *m_optionsHboxLayout;
 
 public slots:
     void joinComplete(int success);
@@ -71,6 +94,7 @@ public slots:
 private slots:
     void createActions();
     void createToolBars();
+    void createForms();
     void boardOptions();
     void publishAnnouncements();
     void searchAnnouncements();
@@ -85,13 +109,11 @@ private slots:
     void enableMenuItem(bool option);
     QString getSelectedItemUri();
 
-    void on_m_sibList_doubleClicked();
-    void on_m_backOptions_clicked();
+    void sibList_doubleClicked();
+    void backOptions_clicked();
 
-    void on_m_searchBtn_clicked();
-
-    void on_m_publishBtn_clicked();
-    void on_m_backPublish_clicked();
+    void publishBtn_clicked();
+    void backPublish_clicked();
 
 signals:
     void getSibs();

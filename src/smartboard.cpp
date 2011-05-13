@@ -22,46 +22,13 @@
 
 SmartBoard::SmartBoard(QWidget *parent) :
     QMainWindow(parent), ui(new Ui::SmartBoard),
-    m_directory("/home"), m_fileDialog(this),
-    m_findDialog(0), m_sticker(new Sticker(":/images/sticker.svg"))
+    m_sticker(new Sticker(":/images/sticker.svg")), m_findDialog(0)
 {
     ui->setupUi(this);
 
+    createForms();
     createActions();
     createToolBars();
-
-    ui->menuBar->hide();
-    ui->m_optionsFrame->hide();
-    ui->m_publishFrame->hide();
-    ui->mainToolBar->setMovable(false);
-    ui->subscribeBoardAction->setEnabled(false);
-    ui->publishAction->setEnabled(false);
-    ui->searchAction->setEnabled(false);
-    ui->unsubscribeAction->setEnabled(false);
-    ui->viewAction->setEnabled(false);
-    ui->m_sibConnectGrp->hide();
-
-    ui->m_triplesView->setColumnWidth(0,70);
-    ui->m_triplesView->setColumnWidth(1,90);
-    ui->m_triplesView->setColumnWidth(2,185);
-    ui->m_triplesView->setColumnWidth(3,10);
-    QStringList headers;
-    headers << tr("Author") << tr("Theme") << tr("Message") << tr("View") ;
-    ui->m_triplesView->setHeaderLabels(headers);
-    ui->m_sibStatus->setStyleSheet("QLabel { color : red; }");
-
-    m_viewBoard = new ViewBoard;
-    //ui->m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    //ui->m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
-    ui->m_graphicsView->setRenderHint(QPainter::Antialiasing, true);
-    ui->m_graphicsView->setCacheMode(QGraphicsView::CacheBackground);
-    ui->m_graphicsView->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-    ui->m_graphicsView->setOptimizationFlags(QGraphicsView::DontClipPainter |
-                                             QGraphicsView::DontSavePainterState |
-                                             QGraphicsView::DontAdjustForAntialiasing);
-    ui->m_graphicsView->setMaximumSize(401, 441);
-    ui->m_graphicsView->setScene(m_viewBoard);
-    ui->m_graphicsView->hide();
 
     setWindowIcon(QIcon(":/images/icon.png"));
 }
@@ -77,6 +44,149 @@ SmartBoard::~SmartBoard()
     }
 
     delete ui;
+}
+
+// crete gui forms
+void SmartBoard::createForms()
+{
+    // options frame
+    m_optionsFrame = new QFrame(ui->centralWidget);
+
+    m_optionsLbl = new QLabel("Options", m_optionsFrame);
+    m_font.setPointSize(20);
+    m_font.setBold(true);
+    m_font.setWeight(75);
+    m_optionsLbl->setFont(m_font);
+
+    m_sibLbl = new QLabel("SIB's", m_optionsFrame);
+    m_sibList = new QListWidget(m_optionsFrame);
+    connect(m_sibList, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(sibList_doubleClicked()));
+    m_sibStatusLbl = new QLabel("Status: ", m_optionsFrame);
+    m_sibStatus = new QLabel(m_optionsFrame);
+    m_backOptions = new QPushButton("Back", m_optionsFrame);
+    connect(m_backOptions, SIGNAL(clicked()), this, SLOT(backOptions_clicked()));
+
+    m_optionsVboxLayout = new QVBoxLayout;
+    m_optionsHboxLayout = new QHBoxLayout;
+    m_optionsHboxLayout->addWidget(m_sibStatusLbl);
+    m_optionsHboxLayout->setSpacing(1);
+    m_optionsHboxLayout->addWidget(m_sibStatus);
+
+    m_optionsVboxLayout->setSpacing(5);
+    m_optionsVboxLayout->addWidget(m_optionsLbl);
+    m_optionsVboxLayout->addWidget(m_sibLbl);
+    m_optionsVboxLayout->addWidget(m_sibList);
+    m_optionsVboxLayout->addLayout(m_optionsHboxLayout);
+    m_optionsVboxLayout->addWidget(m_backOptions);
+
+    m_optionsFrame->setLayout(m_optionsVboxLayout);
+
+    // publish frame
+    m_publishFrame = new QFrame(ui->centralWidget);
+
+    m_publishLbl = new QLabel(m_publishFrame);
+    m_font.setPointSize(20);
+    m_font.setBold(true);
+    m_font.setWeight(75);
+    m_publishLbl->setFont(m_font);
+
+    m_authorLbl = new QLabel("Author", m_publishFrame);
+    m_authorTxt = new QLineEdit(m_publishFrame);
+    m_themeLbl = new QLabel("Theme", m_publishFrame);
+    m_themeTxt = new QLineEdit(m_publishFrame);
+    m_bulletinLbl = new QLabel("Announcement", m_publishFrame);
+    m_bulletinTxt = new QTextEdit(m_publishFrame);
+    m_publishStatusLbl = new QLabel(m_publishFrame);
+    m_publishBtn = new QPushButton("Publish", m_publishFrame);
+    connect(m_publishBtn, SIGNAL(clicked()), this, SLOT(publishBtn_clicked()));
+    m_backPublish = new QPushButton("Back", m_publishFrame);
+    connect(m_backPublish, SIGNAL(clicked()), this, SLOT(backPublish_clicked()));
+
+    m_publishVboxLayout = new QVBoxLayout;
+    m_publishHboxLayout = new QHBoxLayout;
+    m_publishHboxLayout->addWidget(m_publishBtn);
+    m_publishHboxLayout->addStretch(1);
+    m_publishHboxLayout->addWidget(m_backPublish);
+
+    m_publishVboxLayout->setSpacing(5);
+    m_publishVboxLayout->addWidget(m_publishLbl);
+    m_publishVboxLayout->addWidget(m_authorLbl);
+    m_publishVboxLayout->addWidget(m_authorTxt);
+    m_publishVboxLayout->addWidget(m_themeLbl);
+    m_publishVboxLayout->addWidget(m_themeTxt);
+    m_publishVboxLayout->addWidget(m_bulletinLbl);
+    m_publishVboxLayout->addWidget(m_bulletinTxt);
+    m_publishVboxLayout->addWidget(m_publishStatusLbl);
+    m_publishVboxLayout->addLayout(m_publishHboxLayout);
+
+    m_publishFrame->setLayout(m_publishVboxLayout);
+
+    // triples view
+    m_triplesView = new QTreeWidget(ui->centralWidget);
+
+    QTreeWidgetItem *tripleItem = new QTreeWidgetItem();
+    tripleItem->setText(3, QString::fromUtf8("4"));
+    tripleItem->setText(2, QString::fromUtf8("3"));
+    tripleItem->setText(1, QString::fromUtf8("2"));
+    tripleItem->setText(0, QString::fromUtf8("1"));
+
+    m_triplesView->setHeaderItem(tripleItem);
+    m_triplesView->setMouseTracking(false);
+    m_triplesView->setHeaderHidden(false);
+    m_triplesView->setExpandsOnDoubleClick(true);
+    m_triplesView->setColumnCount(4);
+    m_triplesView->header()->setVisible(true);
+    m_triplesView->header()->setCascadingSectionResizes(false);
+    m_triplesView->header()->setHighlightSections(false);
+
+    // stickers view
+    m_graphicsView = new QGraphicsView(ui->centralWidget);
+
+    // central widget layout
+    m_gridLayout = new QGridLayout;
+    m_gridLayout->setMargin(0);
+    m_gridLayout->addWidget(m_optionsFrame, 0, 0);
+    m_gridLayout->addWidget(m_publishFrame, 0, 0);
+    m_gridLayout->addWidget(m_triplesView, 0, 0);
+    m_gridLayout->addWidget(m_graphicsView, 0, 0);
+
+    ui->centralWidget->setLayout(m_gridLayout);
+
+    // menu
+    ui->menuBar->hide();
+    m_optionsFrame->hide();
+    m_publishFrame->hide();
+    ui->mainToolBar->setMovable(false);
+    ui->subscribeBoardAction->setEnabled(false);
+    ui->publishAction->setEnabled(false);
+    ui->searchAction->setEnabled(false);
+    ui->unsubscribeAction->setEnabled(false);
+    ui->viewAction->setEnabled(false);
+
+    this->setTabOrder(m_authorTxt, m_themeTxt);
+    this->setTabOrder(m_themeTxt, m_bulletinTxt);
+
+    m_triplesView->setColumnWidth(0,70);
+    m_triplesView->setColumnWidth(1,90);
+    m_triplesView->setColumnWidth(2,275);
+    m_triplesView->setColumnWidth(3,10);
+    QStringList headers;
+    headers << tr("Author") << tr("Theme") << tr("Message") << tr("View");
+    m_triplesView->setHeaderLabels(headers);
+    m_sibStatus->setStyleSheet("QLabel { color : red; }");
+
+    // graphics view
+    m_viewBoard = new ViewBoard;
+    //m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    //m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+    m_graphicsView->setRenderHint(QPainter::Antialiasing, true);
+    m_graphicsView->setCacheMode(QGraphicsView::CacheBackground);
+    m_graphicsView->setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+    m_graphicsView->setOptimizationFlags(QGraphicsView::DontClipPainter |
+                                             QGraphicsView::DontSavePainterState |
+                                             QGraphicsView::DontAdjustForAntialiasing);
+    m_graphicsView->setScene(m_viewBoard);
+    m_graphicsView->hide();
 }
 
 // create menu actions
@@ -152,56 +262,56 @@ void SmartBoard::createToolBars()
 // show options dialog
 void SmartBoard::boardOptions()
 {
-    if (ui->m_publishFrame->isVisible()) ui->m_publishFrame->hide();
-    if (ui->m_graphicsView->isVisible()) ui->m_graphicsView->hide();
-    if (ui->m_triplesView->isVisible()) ui->m_triplesView->hide();
+    if (m_publishFrame->isVisible()) m_publishFrame->hide();
+    if (m_graphicsView->isVisible()) m_graphicsView->hide();
+    if (m_triplesView->isVisible()) m_triplesView->hide();
 
-    if (ui->m_optionsFrame->isVisible())
+    if (m_optionsFrame->isVisible())
     {
-        ui->m_optionsFrame->hide();
-        ui->m_triplesView->show();
+        m_optionsFrame->hide();
+        m_triplesView->show();
     }
-    else ui->m_optionsFrame->show();
+    else m_optionsFrame->show();
 }
 
 // hide options frame
-void SmartBoard::on_m_backOptions_clicked()
+void SmartBoard::backOptions_clicked()
 {
-    ui->m_optionsFrame->hide();
-    ui->m_triplesView->show();
+    m_optionsFrame->hide();
+    m_triplesView->show();
 }
 
 //
 void SmartBoard::showViewBoard()
 {
-    if (ui->m_optionsFrame->isVisible()) ui->m_optionsFrame->hide();
-    if (ui->m_publishFrame->isVisible()) ui->m_publishFrame->hide();
-    if (ui->m_triplesView->isVisible()) ui->m_triplesView->hide();
+    if (m_optionsFrame->isVisible()) m_optionsFrame->hide();
+    if (m_publishFrame->isVisible()) m_publishFrame->hide();
+    if (m_triplesView->isVisible()) m_triplesView->hide();
 
-    if (ui->m_graphicsView->isVisible())
+    if (m_graphicsView->isVisible())
     {
-        ui->m_graphicsView->hide();
-        ui->m_triplesView->show();
+        m_graphicsView->hide();
+        m_triplesView->show();
         m_viewBoard->clear();
     }
     else
     {
         m_viewBoard->clear();
-        ui->m_graphicsView->show();
+        m_graphicsView->show();
     }
 
     // paint all existing bulletin boxes
-    for (int i = 0; i < ui->m_triplesView->topLevelItemCount(); i++)
+    for (int i = 0; i < m_triplesView->topLevelItemCount(); i++)
     {
-        QTreeWidgetItem *item =  ui->m_triplesView->topLevelItem(i);
-        int rand = qrand() % 350;
+        QTreeWidgetItem *item =  m_triplesView->topLevelItem(i);
+        //int rand = qrand() % 350;
 
         if(item->checkState(3) == Qt::Checked)
         {
             Sticker *sticker = new Sticker(":/images/sticker.svg");
             sticker->setStickerTheme(sticker, item->text(1));
             sticker->setToolTip("<b>" + item->text(0) + "</b>" + "<p>" + item->text(2) + "</p>");
-            sticker->translate(rand, rand);
+            sticker->translate(qrand() % 300, qrand() % 300);
             m_viewBoard->addItem(sticker);
         }
     }
@@ -210,53 +320,53 @@ void SmartBoard::showViewBoard()
 // show add bulletin dialog
 void SmartBoard::publishAnnouncements()
 {
-    if (ui->m_optionsFrame->isVisible()) ui->m_optionsFrame->hide();
-    if (ui->m_graphicsView->isVisible()) ui->m_graphicsView->hide();
+    if (m_optionsFrame->isVisible()) m_optionsFrame->hide();
+    if (m_graphicsView->isVisible()) m_graphicsView->hide();
 
-    ui->m_authorTxt->clear();
-    ui->m_themeTxt->clear();
-    ui->m_bulletinTxt->clear();
-    ui->m_publishStatusLbl->clear();
+    m_authorTxt->clear();
+    m_themeTxt->clear();
+    m_bulletinTxt->clear();
+    m_publishStatusLbl->clear();
 
-    ui->m_publishLbl->setText(tr("Publish announsment"));
-    ui->m_triplesView->hide();
+    m_publishLbl->setText(tr("Publish announsment"));
+    m_triplesView->hide();
 
-    if (ui->m_publishFrame->isVisible())
+    if (m_publishFrame->isVisible())
     {
-        ui->m_publishFrame->hide();
-        ui->m_triplesView->show();
+        m_publishFrame->hide();
+        m_triplesView->show();
     }
     else
     {
-        ui->m_publishFrame->show();
+        m_publishFrame->show();
     }
 
-    if (ui->m_publishBtn->isHidden())       ui->m_publishBtn->show();
-    if (ui->m_publishStatusLbl->isHidden()) ui->m_publishStatusLbl->show();
-    if (ui->m_authorTxt->isReadOnly())      ui->m_authorTxt->setReadOnly(false);
-    if (ui->m_themeTxt->isReadOnly())       ui->m_themeTxt->setReadOnly(false);
-    if (ui->m_bulletinTxt->isReadOnly())    ui->m_bulletinTxt->setReadOnly(false);
+    if (m_publishBtn->isHidden())       m_publishBtn->show();
+    if (m_publishStatusLbl->isHidden()) m_publishStatusLbl->show();
+    if (m_authorTxt->isReadOnly())      m_authorTxt->setReadOnly(false);
+    if (m_themeTxt->isReadOnly())       m_themeTxt->setReadOnly(false);
+    if (m_bulletinTxt->isReadOnly())    m_bulletinTxt->setReadOnly(false);
 }
 
 // hide publish data frame
-void SmartBoard::on_m_backPublish_clicked()
+void SmartBoard::backPublish_clicked()
 {
-    ui->m_publishFrame->hide();
-    ui->m_triplesView->show();
+    m_publishFrame->hide();
+    m_triplesView->show();
 
-    ui->m_publishStatusLbl->clear();
-    ui->m_authorTxt->clear();
-    ui->m_themeTxt->clear();
-    ui->m_bulletinTxt->clear();
+    m_publishStatusLbl->clear();
+    m_authorTxt->clear();
+    m_themeTxt->clear();
+    m_bulletinTxt->clear();
 }
 
 // subscribe button
 void SmartBoard::subscribeBoard()
 {
-    if (ui->m_optionsFrame->isVisible()) ui->m_optionsFrame->hide();
-    if (ui->m_publishFrame->isVisible()) ui->m_publishFrame->hide();
-    if (ui->m_graphicsView->isVisible()) ui->m_publishFrame->hide();
-    if (ui->m_triplesView->isHidden()) ui->m_triplesView->show();
+    if (m_optionsFrame->isVisible()) m_optionsFrame->hide();
+    if (m_publishFrame->isVisible()) m_publishFrame->hide();
+    if (m_graphicsView->isVisible()) m_publishFrame->hide();
+    if (m_triplesView->isHidden()) m_triplesView->show();
 
     sibSubscribe(new Triple(TripleElement("sib:any", TripleElement::ElementTypeURI),
                             TripleElement("sib:any"),
@@ -271,14 +381,13 @@ void SmartBoard::boardHelp()
 {
     QMessageBox::about(this, tr("Smart Board help"),
                        tr("<h2>Smart Board</h2>"
-                       "<p><b>Follow this instructions:</b> "
-                       "<p><b>Options</b> - connect to the SIB, point SIB IP"
+                       "<p><b>Options</b> - connect to the SIB"
                        "<p><b>Publish</b> - publish new announsment."
                        "<p><b>Subscribe</b> - subscribe to announsments."
                        "<p><b>Unsubscribe</b> - unsubscribe from announsments."
                        "<p><b>View</b> - graphical view of selected announsments."
-                       "<p><b>Search</b> - search information in announsments."
-                       "<p><b>Double click</b> on table item - get full information."));
+                       "<p><b>Double click</b> on table item - get full information."
+                       "<p>See <b>README</b> file for full process description."));
 }
 
 // about Smart Board
@@ -308,8 +417,8 @@ void SmartBoard::leaveSelectedSib()
 
         QWhiteBoardNode *node = m_nodes.take(m_sibUri);
         node->deleteLater();
-        ui->m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
-        ui->m_sibStatus->setStyleSheet("QLabel {color : red;}");
+        m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
+        m_sibStatus->setStyleSheet("QLabel {color : red;}");
         enableMenuItem(false);
     }
 }
@@ -326,8 +435,8 @@ void SmartBoard::joinSelectedSib()
         if(m_nodes[m_sibUri]->join(m_sibUri) < 0)
         {
             QMessageBox::critical(this, "Join error","Join failed to SIB "  + m_sibUri);
-            ui->m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
-            ui->m_sibStatus->setStyleSheet("QLabel {color : red;}");
+            m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
+            m_sibStatus->setStyleSheet("QLabel {color : red;}");
             enableMenuItem(false);
         }
     }
@@ -360,22 +469,22 @@ void SmartBoard::joinComplete(int success)
         if(success < 0)
         {
             QMessageBox::critical(this, "Join error","Join failed to SIB "  + m_sibUri);
-            ui->m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
-            ui->m_sibStatus->setStyleSheet("QLabel { color : red; }");
+            m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
+            m_sibStatus->setStyleSheet("QLabel { color : red; }");
             enableMenuItem(false);
         }
         else
         {
-            ui->m_sibStatus->setText(tr("Joined to SIB ")  + m_sibUri);
-            ui->m_sibStatus->setStyleSheet("QLabel { color : green; }");
+            m_sibStatus->setText(tr("Joined to SIB ")  + m_sibUri);
+            m_sibStatus->setStyleSheet("QLabel { color : green; }");
             enableMenuItem(true);
         }
     }
     else
     {
         QMessageBox::critical(this, "Join error","Internal Join error");
-        ui->m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
-        ui->m_sibStatus->setStyleSheet("QLabel { color : red; }");
+        m_sibStatus->setText(tr("Not joined to SIB ")  + m_sibUri);
+        m_sibStatus->setStyleSheet("QLabel { color : red; }");
         enableMenuItem(false);
     }
 }
@@ -396,8 +505,8 @@ void SmartBoard::sibList(const QList<QSibInfo *> &siblist)
         new_sib << (*it)->uri() << (*it)->name();
         QString label = new_sib.join("--");
 
-        if(ui->m_sibList->findItems(label, Qt::MatchStartsWith).count() == 0)
-            ui->m_sibList->addItem(label);
+        if(m_sibList->findItems(label, Qt::MatchStartsWith).count() == 0)
+            m_sibList->addItem(label);
     }
 }
 
@@ -408,25 +517,25 @@ void SmartBoard::sibInserted(const QSibInfo *sib)
     new_sib << sib->uri() << sib->name();
     QString label = new_sib.join("--");
 
-    if( ui->m_sibList->findItems(label, Qt::MatchStartsWith).count() == 0)
-        ui->m_sibList->addItem(label);
+    if( m_sibList->findItems(label, Qt::MatchStartsWith).count() == 0)
+        m_sibList->addItem(label);
 }
 
 //
 void SmartBoard::sibRemoved(QString uri)
 {
-    QList<QListWidgetItem *> items =  ui->m_sibList->findItems(uri, Qt::MatchStartsWith);
+    QList<QListWidgetItem *> items =  m_sibList->findItems(uri, Qt::MatchStartsWith);
 
     QList<QListWidgetItem *>::iterator item_it;
     for( item_it = items.begin(); item_it != items.end(); item_it++)
     {
-        QListWidgetItem *item = ui->m_sibList->takeItem(ui->m_sibList->row(*item_it));
+        QListWidgetItem *item = m_sibList->takeItem(m_sibList->row(*item_it));
         delete item;
     }
 }
 
 // join or leave sib
-void SmartBoard::on_m_sibList_doubleClicked()
+void SmartBoard::sibList_doubleClicked()
 {
     m_sibUri = getSelectedItemUri();
 
@@ -438,43 +547,43 @@ void SmartBoard::on_m_sibList_doubleClicked()
 
 
 // publish announsment to the SS
-void SmartBoard::on_m_publishBtn_clicked()
+void SmartBoard::publishBtn_clicked()
 {
-    if(ui->m_authorTxt->text().isEmpty() ||
-       ui->m_themeTxt->text().isEmpty() ||
-       ui->m_bulletinTxt->toPlainText().isEmpty())
+    if(m_authorTxt->text().isEmpty() ||
+       m_themeTxt->text().isEmpty() ||
+       m_bulletinTxt->toPlainText().isEmpty())
     {
         QMessageBox::warning(this, "Empty fields","Please, insert some data to the fields!");
         return;
     }
 
-    if(ui->m_authorTxt->text().contains("&", Qt::CaseInsensitive) ||
-       ui->m_themeTxt->text().contains("&", Qt::CaseInsensitive)  ||
-       ui->m_bulletinTxt->toPlainText().contains("&", Qt::CaseInsensitive))
+    if(m_authorTxt->text().contains("&", Qt::CaseInsensitive) ||
+       m_themeTxt->text().contains("&", Qt::CaseInsensitive)  ||
+       m_bulletinTxt->toPlainText().contains("&", Qt::CaseInsensitive))
     {
         QMessageBox::warning(this, "Invalid character","Entered an invalid character: &. Please check this!");
         return;
     }
 
-    Triple *triple = new Triple(TripleElement(ui->m_authorTxt->text(), TripleElement::ElementTypeURI),
-                                TripleElement(ui->m_themeTxt->text()),
-                                TripleElement(ui->m_bulletinTxt->toPlainText(), TripleElement::ElementTypeURI));
+    Triple *triple = new Triple(TripleElement(m_authorTxt->text(), TripleElement::ElementTypeURI),
+                                TripleElement(m_themeTxt->text()),
+                                TripleElement(m_bulletinTxt->toPlainText(), TripleElement::ElementTypeURI));
 
     m_graphList.append(triple);
 
-    if(ui->m_sibList->count() > 0)
+    if(m_sibList->count() > 0)
     {
         m_sibUri = getSelectedItemUri();
 
         if(m_nodes.contains(m_sibUri) && m_nodes[m_sibUri]->insert(m_graphList) >= 0)
         {
-            ui->m_publishStatusLbl->setText(tr("Announsment is published!"));
-            ui->m_publishStatusLbl->setStyleSheet("QLabel { color : green; }");
+            m_publishStatusLbl->setText(tr("Announsment is published!"));
+            m_publishStatusLbl->setStyleSheet("QLabel { color : green; }");
         }
         else
         {
-            ui->m_publishStatusLbl->setText(tr("Announsment isn't published!"));
-            ui->m_publishStatusLbl->setStyleSheet("QLabel { color : red; }");
+            m_publishStatusLbl->setText(tr("Announsment isn't published!"));
+            m_publishStatusLbl->setStyleSheet("QLabel { color : red; }");
         }
     }
     else
@@ -488,8 +597,8 @@ void SmartBoard::on_m_publishBtn_clicked()
 
     // set added announcement item to scene
     m_sticker->translate(20, 20);
-    m_sticker->setStickerTheme(m_sticker, ui->m_themeTxt->text());
-    m_sticker->setToolTip("<b>" + ui->m_authorTxt->text() + "</b>" + "<p>" + ui->m_bulletinTxt->toPlainText() + "</p>");
+    m_sticker->setStickerTheme(m_sticker, m_themeTxt->text());
+    m_sticker->setToolTip("<b>" + m_authorTxt->text() + "</b>" + "<p>" + m_bulletinTxt->toPlainText() + "</p>");
     m_viewBoard->addItem(m_sticker);
 }
 
@@ -498,14 +607,14 @@ void SmartBoard::sibSubscribe(Triple *triple)
     QList<Triple *> list;
     list.append(triple);
 
-    if(ui->m_sibList->count() > 0)
+    if(m_sibList->count() > 0)
     {
         m_sibUri = getSelectedItemUri();
 
         if(m_nodes.contains(m_sibUri))
         {
             TemplateSubscription *s = new TemplateSubscription(m_nodes[m_sibUri]);
-            s->setObjectName("subscription");
+            s->setObjectName("smartSubscription");
             if(!m_subscriptions.contains(s->objectName()))
                 m_subscriptions[s->objectName()] = s;
             else
@@ -541,22 +650,22 @@ void SmartBoard::subscriptionIndication()
         QList<Triple *> resultsAdded = q->resultsAdded();
         QList<Triple *> resultsObs = q->resultsObsolete();
         QList<Triple *>::iterator it;
-        QTreeWidgetItem *rootItem = ui->m_triplesView->invisibleRootItem();
+        QTreeWidgetItem *rootItem = m_triplesView->invisibleRootItem();
 
         qDebug() << "Got: " << resultsAdded.count() << " new triples";
         qDebug() << "Got: " << resultsObs.count() << " obsolete triples";
 
         for(it = resultsObs.begin(); it != resultsObs.end(); ++it)
         {
-            for(int ii = 0; ii < rootItem->childCount(); ii++)
+            for(int i = 0; i < rootItem->childCount(); i++)
             {
-                QTreeWidgetItem *child = rootItem->child(ii);
+                QTreeWidgetItem *child = rootItem->child(i);
                 if(((*it)->subject().node().compare(child->text(0)) == 0) &&
                   ((*it)->predicate().node().compare(child->text(1)) == 0) &&
                   (((*it)->object().node().isEmpty() && (child->text(2).compare("<empty>")==0)) ||
                   ((*it)->object().node().compare(child->text(2)) == 0)))
                 {
-                    QTreeWidgetItem *c1 = rootItem->takeChild(ii);
+                    QTreeWidgetItem *c1 = rootItem->takeChild(i);
                     delete c1;
                     break;
                 }
@@ -583,13 +692,13 @@ void SmartBoard::subscriptionIndication()
                 }
             }
 
-            ui->m_triplesView->addTopLevelItems(items);
+            m_triplesView->addTopLevelItems(items);
 
             ui->unsubscribeAction->setEnabled(true);
             ui->subscribeBoardAction->setEnabled(false);
 
             connect(ui->unsubscribeAction, SIGNAL(triggered()), this, SLOT(sibUnsubscribe()));
-            connect(ui->m_triplesView, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)),
+            connect(m_triplesView, SIGNAL(itemDoubleClicked(QTreeWidgetItem *, int)),
                     this, SLOT(fullBulletinInfo(QTreeWidgetItem *)));
         }
     }
@@ -618,7 +727,7 @@ void SmartBoard::sibUnsubscribe()
         }
 
         m_activeSubscription.clear();
-        ui->m_triplesView->clear();
+        m_triplesView->clear();
         ui->subscribeBoardAction->setEnabled(true);
         ui->unsubscribeAction->setEnabled(false);
         ui->searchAction->setEnabled(false);
@@ -631,19 +740,19 @@ void SmartBoard::sibUnsubscribe()
 
 void SmartBoard::fullBulletinInfo(QTreeWidgetItem *item)
 {
-    ui->m_publishLbl->setText(tr("Announsment"));
+    m_publishLbl->setText(tr("Announsment"));
 
-    ui->m_triplesView->hide();
-    ui->m_publishBtn->hide();
-    ui->m_publishStatusLbl->hide();
-    ui->m_publishFrame->show();
+    m_triplesView->hide();
+    m_publishBtn->hide();
+    m_publishStatusLbl->hide();
+    m_publishFrame->show();
 
-    ui->m_authorTxt->setText(item->text(0));
-    ui->m_authorTxt->setReadOnly(true);
-    ui->m_themeTxt->setText(item->text(1));
-    ui->m_themeTxt->setReadOnly(true);
-    ui->m_bulletinTxt->setText(item->text(2));
-    ui->m_bulletinTxt->setReadOnly(true);
+    m_authorTxt->setText(item->text(0));
+    m_authorTxt->setReadOnly(true);
+    m_themeTxt->setText(item->text(1));
+    m_themeTxt->setReadOnly(true);
+    m_bulletinTxt->setText(item->text(2));
+    m_bulletinTxt->setReadOnly(true);
 }
 
 void SmartBoard::enableMenuItem(bool option)
@@ -654,40 +763,10 @@ void SmartBoard::enableMenuItem(bool option)
 
 QString SmartBoard::getSelectedItemUri()
 {
-    QListWidgetItem *item = ui->m_sibList->item(ui->m_sibList->currentRow());
+    QListWidgetItem *item = m_sibList->item(m_sibList->currentRow());
     QStringList txt = item->text().split("--");
     QString sib_uri = txt[0];
     return sib_uri;
-}
-
-// убрать или переработать!
-void SmartBoard::on_m_searchBtn_clicked()
-{
-    QString sibIpFileName = m_fileDialog.getOpenFileName(this, tr("Open and change SIB IP file"),
-                                                         m_directory.path());
-    if (sibIpFileName.isNull() == false)
-    {
-        QFile sibIpFile(sibIpFileName);
-
-        if (!sibIpFile.open(QIODevice::WriteOnly | QIODevice::Text))
-            qWarning() << "Cannot open " << sibIpFile.fileName() << " file";
-        else
-        {
-            // сделать проверки на
-            // 1. Диапозон ИП адреса (16 макс)
-            // 2. На запись только цифр и т.д
-            if (!ui->m_sibIPTxt->text().isEmpty())
-            {
-                QTextStream out(&sibIpFile);
-                out << ui->m_sibIPTxt->text();
-
-                sibIpFile.close();
-                ui->m_sibIPStatusLbl->setText("SIB IP successfully written.");
-            }
-            else
-                QMessageBox::information(this, "Empty SIB IP address", "Please write your SIB IP");
-        }
-    }
 }
 
 // поиск объявлений
@@ -707,7 +786,7 @@ void SmartBoard::searchAnnouncements()
 //
 void SmartBoard::findData(const QString &str, Qt::CaseSensitivity cs)
 {
-    QTreeWidgetItem *rootItem = ui->m_triplesView->invisibleRootItem();
+    QTreeWidgetItem *rootItem = m_triplesView->invisibleRootItem();
 
     for(int i = 0; i < rootItem->childCount(); i++)
     {
